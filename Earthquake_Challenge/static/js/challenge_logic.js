@@ -1,5 +1,5 @@
 // Add console.log to check to see if our code is working.
-console.log("working");
+//onsole.log("working");
 
 // We create the tile layer that will be the background of our map.
 let streets = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -15,27 +15,37 @@ let satelliteStreets = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/sate
 	accessToken: API_KEY
 });
 
-// Create the map object with center, zoom level and default layer.
-let map = L.map('mapid', {
-	center: [40.7, -94.5],
-	zoom: 3,
-	layers: [streets]
+// Create another variable for the light view tile layer.
+let light = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+	attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery (c) <a href="https://www.mapbox.com/">Mapbox</a>',
+	maxZoom: 18,
+	accessToken: API_KEY
 });
 
 // Create a base layer that holds all three maps.
 let baseMaps = {
   "Streets": streets,
-  "Satellite": satelliteStreets
+  "Satellite": satelliteStreets,
+  "Light": light
 };
 
 // 1. Add a 2nd layer group for the tectonic plate data.
-let allEarthquakes = new L.LayerGroup();
+let earthquakes = new L.LayerGroup();
 
+let tectonic_plates = new L.LayerGroup();
 
 // 2. Add a reference to the tectonic plates group to the overlays object.
 let overlays = {
-  "Earthquakes": allEarthquakes
+  "Earthquakes": earthquakes,
+  "Tectonic Plates": tectonic_plates
 };
+
+// Create map object.
+let map = L.map('mapid', {
+  center: [39.5, -98.5],
+  zoom: 3,
+  layers: [streets]
+});
 
 // Then we add a control to the map that will allow the user to change which
 // layers are visible.
@@ -102,10 +112,10 @@ d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geoj
      onEachFeature: function(feature, layer) {
       layer.bindPopup("Magnitude: " + feature.properties.mag + "<br>Location: " + feature.properties.place);
     }
-  }).addTo(allEarthquakes);
+  }).addTo(earthquakes);
 
   // Then we add the earthquake layer to our map.
-  allEarthquakes.addTo(map);
+  earthquakes.addTo(map);
 
   // Here we create a legend control object.
 let legend = L.control({
@@ -139,9 +149,24 @@ legend.onAdd = function() {
   // Finally, we our legend to the map.
   legend.addTo(map);
 
+// Fault line data.
+let faultLineData = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json";
+
+let lineStyle = {
+  color: "#ff7438",
+  weight: 2
+};
 
   // 3. Use d3.json to make a call to get our Tectonic Plate geoJSON data.
-  d3.json().then(() {
-    
+  d3.json(faultLineData).then(function(data) {
+    console.log(data);
+
+    //Create a GeoJSON layer,
+    L.geoJson(data, {
+      style: lineStyle
+    }).addTo(tectonic_plates);
+
+    // Add tectonic plate layer.
+    tectonic_plates.addTo(map);
   });
 });
